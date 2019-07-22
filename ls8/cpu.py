@@ -89,10 +89,11 @@ class CPU:
             elif ir == LDI:
                 self.reg[operand_a] = operand_b
                 self.pc += 3
-                self.trace()
             elif ir == PRN:
                 print(self.reg[operand_a])
                 self.pc += 1
+            elif ir == 0:
+                self.running = False
             else:
                 print(f"Unknown instruction { ir }")
                 sys.exit(1)
