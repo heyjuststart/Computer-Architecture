@@ -1,10 +1,12 @@
 """CPU functionality."""
 
 import sys
+import re
 
 HLT = 1
 LDI = 0b10000010
 PRN = 0b01000111
+MUL = 0b10100010
 
 
 class CPU:
@@ -17,22 +19,29 @@ class CPU:
         self.running = True
         self.reg = [0] * 8
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
         address = 0
+        program = None
+
+        with open(filename) as f:
+            program = f.readlines()
+
+        program = [re.sub("#.*$", "", x).strip() for x in program]
+        program = [int(x, 2) for x in program if len(x) > 0]
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010,  # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0
-            0b00000000,
-            0b00000001,  # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010,  # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111,  # PRN R0
+        #     0b00000000,
+        #     0b00000001,  # HLT
+        # ]
 
         for instruction in program:
             self.ram[address] = instruction
@@ -92,6 +101,9 @@ class CPU:
             elif ir == PRN:
                 print(self.reg[operand_a])
                 self.pc += 1
+            elif ir == MUL:
+                self.reg[operand_a] = self.reg[operand_a] * self.reg[operand_b]
+                self.pc += 3
             elif ir == 0:
                 self.running = False
             else:
