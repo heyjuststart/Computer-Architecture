@@ -7,6 +7,8 @@ HLT = 1
 LDI = 0b10000010
 PRN = 0b01000111
 MUL = 0b10100010
+POP = 0b01000110
+PUSH = 0b01000101
 
 
 class CPU:
@@ -18,11 +20,14 @@ class CPU:
         self.pc = 0
         self.running = True
         self.reg = [0] * 8
+        self.reg[7] = 0xF3
         self.branchtable = {}
         self.branchtable[HLT] = self.handle_hlt
         self.branchtable[LDI] = self.handle_ldi
         self.branchtable[PRN] = self.handle_prn
         self.branchtable[MUL] = self.handle_mul
+        self.branchtable[PUSH] = self.handle_push
+        self.branchtable[POP] = self.handle_pop
 
     def handle_hlt(self):
         self.running = False
@@ -34,11 +39,22 @@ class CPU:
 
     def handle_prn(self, a):
         print(self.reg[a])
-        self.pc += 1
+        self.pc += 2
 
     def handle_mul(self, a, b):
         self.reg[a] = self.reg[a] * self.reg[b]
         self.pc += 3
+
+    def handle_push(self, a):
+        self.reg[7] -= 1
+        self.ram[self.reg[7]] = self.reg[a]
+        self.pc += 2
+
+    def handle_pop(self, a):
+        self.reg[a] = self.ram[self.reg[7]]
+        self.reg[7] += 1
+        self.pc += 2
+
 
     def load(self, filename):
         """Load a program into memory."""
@@ -110,6 +126,7 @@ class CPU:
     def run(self):
         """Run the CPU."""
         while self.running:
+            self.trace()
             ir = self.ram_read(self.pc)
             num_operands = ir >> 6 # get first 2 bits for operand count
             operand_a = self.ram_read(self.pc + 1)
