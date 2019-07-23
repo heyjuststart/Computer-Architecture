@@ -18,6 +18,27 @@ class CPU:
         self.pc = 0
         self.running = True
         self.reg = [0] * 8
+        self.branchtable = {}
+        self.branchtable[HLT] = self.handle_hlt
+        self.branchtable[LDI] = self.handle_ldi
+        self.branchtable[PRN] = self.handle_prn
+        self.branchtable[MUL] = self.handle_mul
+
+    def handle_hlt(self):
+        self.running = False
+        self.pc += 1
+
+    def handle_ldi(self, a, b):
+        self.reg[a] = b
+        self.pc += 3
+
+    def handle_prn(self, a):
+        print(self.reg[a])
+        self.pc += 1
+
+    def handle_mul(self, a, b):
+        self.reg[a] = self.reg[a] * self.reg[b]
+        self.pc += 3
 
     def load(self, filename):
         """Load a program into memory."""
@@ -90,23 +111,18 @@ class CPU:
         """Run the CPU."""
         while self.running:
             ir = self.ram_read(self.pc)
+            num_operands = ir >> 6 # get first 2 bits for operand count
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
-            if ir == HLT:
-                running = False
-                self.pc += 1
-            elif ir == LDI:
-                self.reg[operand_a] = operand_b
-                self.pc += 3
-            elif ir == PRN:
-                print(self.reg[operand_a])
-                self.pc += 1
-            elif ir == MUL:
-                self.reg[operand_a] = self.reg[operand_a] * self.reg[operand_b]
-                self.pc += 3
-            elif ir == 0:
-                self.running = False
+            if ir in self.branchtable:
+                if num_operands == 0:
+                    self.branchtable[ir]()
+                elif num_operands == 1:
+                    self.branchtable[ir](operand_a)
+                elif num_operands == 2:
+                    self.branchtable[ir](operand_a, operand_b)
             else:
-                print(f"Unknown instruction { ir }")
+                if ir is not 0:
+                    print(f"Unknown instruction { ir }")
                 sys.exit(1)
                 self.pc += 1
