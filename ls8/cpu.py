@@ -11,6 +11,7 @@ POP = 0b01000110
 PUSH = 0b01000101
 RET = 0b00010001
 CALL = 0b01010000
+ADD = 0b10100000
 
 SP = 7 # index of stack pointer in register
 
@@ -32,16 +33,18 @@ class CPU:
         self.branchtable[PUSH] = self.handle_push
         self.branchtable[POP] = self.handle_pop
         self.branchtable[RET] = self.handle_ret
-        self.branchtable[call] = self.handle_call
+        self.branchtable[CALL] = self.handle_call
+        self.branchtable[ADD] = self.handle_add
 
     def handle_call(self, a):
-        return_addr = pc + 2
+        return_addr = self.pc + 2
 
         # push return address on stack (same code as push)
         # would need to write a helper though since we want to
         # avoid using a register
         self.reg[SP] -= 1
         self.ram[self.reg[SP]] = return_addr
+
         self.pc = self.reg[a]
 
 
@@ -64,6 +67,9 @@ class CPU:
     def handle_mul(self, a, b):
         self.reg[a] = self.reg[a] * self.reg[b]
         # self.pc += 3
+
+    def handle_add(self, a, b):
+        self.reg[a] = self.reg[a] + self.reg[b]
 
     def handle_push(self, a):
         self.reg[SP] -= 1
@@ -146,7 +152,7 @@ class CPU:
     def run(self):
         """Run the CPU."""
         while self.running:
-            self.trace()
+            # self.trace()
             ir = self.ram_read(self.pc)
             num_operands = ir >> 6 # get first 2 bits for operand count
             #                `AABCDDDD`
