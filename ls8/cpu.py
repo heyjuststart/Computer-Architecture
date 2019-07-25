@@ -9,7 +9,9 @@ PRN = 0b01000111
 MUL = 0b10100010
 POP = 0b01000110
 PUSH = 0b01000101
+RET = 0b00010001
 
+SP = 7 # index of stack pointer in register
 
 class CPU:
     """Main CPU class."""
@@ -20,7 +22,7 @@ class CPU:
         self.pc = 0
         self.running = True
         self.reg = [0] * 8
-        self.reg[7] = 0xF3
+        self.reg[SP] = 0xF4
         self.branchtable = {}
         self.branchtable[HLT] = self.handle_hlt
         self.branchtable[LDI] = self.handle_ldi
@@ -28,6 +30,11 @@ class CPU:
         self.branchtable[MUL] = self.handle_mul
         self.branchtable[PUSH] = self.handle_push
         self.branchtable[POP] = self.handle_pop
+        self.branchtable[RET] = self.handle_ret
+
+    def handle_ret(self):
+        self.pc = self.ram[self.reg[SP]]
+        self.reg[SP] += 1
 
     def handle_hlt(self):
         self.running = False
@@ -46,13 +53,13 @@ class CPU:
         self.pc += 3
 
     def handle_push(self, a):
-        self.reg[7] -= 1
-        self.ram[self.reg[7]] = self.reg[a]
+        self.reg[SP] -= 1
+        self.ram[self.reg[SP]] = self.reg[a]
         self.pc += 2
 
     def handle_pop(self, a):
-        self.reg[a] = self.ram[self.reg[7]]
-        self.reg[7] += 1
+        self.reg[a] = self.ram[self.reg[SP]]
+        self.reg[SP] += 1
         self.pc += 2
 
 
