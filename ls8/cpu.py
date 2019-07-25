@@ -10,6 +10,7 @@ MUL = 0b10100010
 POP = 0b01000110
 PUSH = 0b01000101
 RET = 0b00010001
+CALL = 0b01010000
 
 SP = 7 # index of stack pointer in register
 
@@ -31,6 +32,18 @@ class CPU:
         self.branchtable[PUSH] = self.handle_push
         self.branchtable[POP] = self.handle_pop
         self.branchtable[RET] = self.handle_ret
+        self.branchtable[call] = self.handle_call
+
+    def handle_call(self, a):
+        return_addr = pc + 2
+
+        # push return address on stack (same code as push)
+        # would need to write a helper though since we want to
+        # avoid using a register
+        self.reg[SP] -= 1
+        self.ram[self.reg[SP]] = return_addr
+        self.pc = self.reg[a]
+
 
     def handle_ret(self):
         self.pc = self.ram[self.reg[SP]]
@@ -38,29 +51,29 @@ class CPU:
 
     def handle_hlt(self):
         self.running = False
-        self.pc += 1
+        # self.pc += 1
 
     def handle_ldi(self, a, b):
         self.reg[a] = b
-        self.pc += 3
+        # self.pc += 3
 
     def handle_prn(self, a):
         print(self.reg[a])
-        self.pc += 2
+        # self.pc += 2
 
     def handle_mul(self, a, b):
         self.reg[a] = self.reg[a] * self.reg[b]
-        self.pc += 3
+        # self.pc += 3
 
     def handle_push(self, a):
         self.reg[SP] -= 1
         self.ram[self.reg[SP]] = self.reg[a]
-        self.pc += 2
+        # self.pc += 2
 
     def handle_pop(self, a):
         self.reg[a] = self.ram[self.reg[SP]]
         self.reg[SP] += 1
-        self.pc += 2
+        # self.pc += 2
 
 
     def load(self, filename):
@@ -136,6 +149,8 @@ class CPU:
             self.trace()
             ir = self.ram_read(self.pc)
             num_operands = ir >> 6 # get first 2 bits for operand count
+            #                `AABCDDDD`
+            sets_pc = (ir & 0b00010000) >> 4 # mask to check C, 1 indicates setting PC
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
             if ir in self.branchtable:
@@ -145,6 +160,8 @@ class CPU:
                     self.branchtable[ir](operand_a)
                 elif num_operands == 2:
                     self.branchtable[ir](operand_a, operand_b)
+                if sets_pc is not 1:
+                    self.pc += 1 + num_operands
             else:
                 if ir is not 0:
                     print(f"Unknown instruction { ir }")
