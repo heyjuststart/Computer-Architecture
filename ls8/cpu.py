@@ -12,6 +12,7 @@ PUSH = 0b01000101
 RET = 0b00010001
 CALL = 0b01010000
 ADD = 0b10100000
+CMP = 0b10100111
 
 SP = 7 # index of stack pointer in register
 
@@ -21,7 +22,8 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.ram = [0] * 256
-        self.pc = 0
+        self.pc = 0 # address of currently running instruction, (index of array in this emulator)
+        self.fl = 0 # flag internal register
         self.running = True
         self.reg = [0] * 8
         self.reg[SP] = 0xF4
@@ -157,9 +159,12 @@ class CPU:
             num_operands = ir >> 6 # get first 2 bits for operand count
             #                `AABCDDDD`
             sets_pc = (ir & 0b00010000) >> 4 # mask to check C, 1 indicates setting PC
+            uses_alu = (ir & 0b00100000) >> 4 # mask to check B, 1 indicates ALU
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
-            if ir in self.branchtable:
+            if uses_alu == 1:
+                self.ALU(ir, operand_a, operand_b)
+            elif ir in self.branchtable:
                 if num_operands == 0:
                     self.branchtable[ir]()
                 elif num_operands == 1:
